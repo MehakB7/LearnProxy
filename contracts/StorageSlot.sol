@@ -5,5 +5,8 @@ pragma solidity ^0.8.9;
 // import "hardhat/console.sol";
 
 contract StorageSlot {
-
+    uint num1 = 97;
+    uint num2 = 98;
+    mapping(address => int) testing;
+    uint8 some = 2;
 }
