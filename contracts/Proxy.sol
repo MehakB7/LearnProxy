@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
+import "./Storage.sol";
 
 contract Proxy {
-    address public implmentation;
+    // we will keep the storage in the proxy contacts
+    uint x;
 
     function changeImplementation(address _implementation) external {
-        implmentation = _implementation;
+        StorageSlot.getAddressSlot(keccak256("impl")).value = _implementation;
     }
 
     fallback() external {
-        (bool success, ) = implmentation.call(msg.data);
+        (bool success, ) = StorageSlot
+            .getAddressSlot(keccak256("impl"))
+            .value
+            .delegatecall(msg.data);
         require(success);
     }
 }

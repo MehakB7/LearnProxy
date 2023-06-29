@@ -7,6 +7,11 @@ const { expect } = require("chai");
 const { assert } = require("ethers");
 const { ethers } = require("hardhat");
 
+async function lookup(address, slot) {
+  let ans = parseInt(await hre.ethers.provider.getStorage(address, slot));
+  return ans;
+}
+
 describe("Lock", function () {
   async function deployFixture() {
     const [owner, otherAccount] = await ethers.getSigners();
@@ -39,11 +44,10 @@ describe("Lock", function () {
       const { proxy, logic1, logic2 } = await loadFixture(deployFixture);
 
       await proxy.changeImplementation(logic1.target);
-      let imp = await proxy.implmentation();
+
       let logicX = await logic1.x();
       let logicx2 = await logic2.x();
 
-      await expect(imp).to.be.eq(logic1.target);
       await expect(logicX).to.be.eq(0);
       await expect(logicx2).to.be.eq(0);
     });
@@ -53,7 +57,7 @@ describe("Lock", function () {
       await proxy.changeImplementation(logic1.target);
       await proxyAsLogic1.changeX(25);
       const ans = await logic1.x();
-      await expect(ans).to.be.eq(25);
+      await expect(ans).to.be.eq(0);
     });
     it("proxy should call method of logic2 contract", async function () {
       const { proxy, proxyAsLogic2, logic2 } = await loadFixture(deployFixture);
@@ -62,6 +66,16 @@ describe("Lock", function () {
       await proxyAsLogic2.changeX(25);
       await proxyAsLogic2.tripleX();
       const ans = await logic2.x();
+      await expect(ans).to.be.eq(0);
+    });
+    it("proxy should call method of logic2 contract and update value in proxy ", async function () {
+      const { proxy, proxyAsLogic2, logic2 } = await loadFixture(deployFixture);
+
+      await proxy.changeImplementation(logic2.target);
+      await proxyAsLogic2.changeX(25);
+      await proxyAsLogic2.tripleX();
+      const ans = await lookup(proxy.target, "0x0");
+
       await expect(ans).to.be.eq(75);
     });
   });
