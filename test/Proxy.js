@@ -5,6 +5,7 @@ const {
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { assert } = require("ethers");
+const { ethers } = require("hardhat");
 
 describe("Lock", function () {
   async function deployFixture() {
@@ -19,11 +20,22 @@ describe("Lock", function () {
     const Logic2 = await ethers.getContractFactory("Logic2");
     const logic2 = await Logic2.deploy();
 
-    return { proxy, logic1, logic2, owner, otherAccount };
+    const proxyAsLogic1 = await ethers.getContractAt("Logic1", proxy.target);
+    const proxyAsLogic2 = await ethers.getContractAt("Logic2", proxy.target);
+
+    return {
+      proxy,
+      logic1,
+      logic2,
+      owner,
+      otherAccount,
+      proxyAsLogic1,
+      proxyAsLogic2,
+    };
   }
 
   describe("Deployment", function () {
-    it("inital varaibles checking", async function () {
+    it("initial varaibles checking", async function () {
       const { proxy, logic1, logic2 } = await loadFixture(deployFixture);
 
       await proxy.changeImplementation(logic1.target);
@@ -34,6 +46,23 @@ describe("Lock", function () {
       await expect(imp).to.be.eq(logic1.target);
       await expect(logicX).to.be.eq(0);
       await expect(logicx2).to.be.eq(0);
+    });
+    it("proxy should call method of logic1 contract", async function () {
+      const { proxy, proxyAsLogic1, logic1 } = await loadFixture(deployFixture);
+
+      await proxy.changeImplementation(logic1.target);
+      await proxyAsLogic1.changeX(25);
+      const ans = await logic1.x();
+      await expect(ans).to.be.eq(25);
+    });
+    it("proxy should call method of logic2 contract", async function () {
+      const { proxy, proxyAsLogic2, logic2 } = await loadFixture(deployFixture);
+
+      await proxy.changeImplementation(logic2.target);
+      await proxyAsLogic2.changeX(25);
+      await proxyAsLogic2.tripleX();
+      const ans = await logic2.x();
+      await expect(ans).to.be.eq(75);
     });
   });
 });

@@ -7,6 +7,11 @@ contract Proxy {
     function changeImplementation(address _implementation) external {
         implmentation = _implementation;
     }
+
+    fallback() external {
+        (bool success, ) = implmentation.call(msg.data);
+        require(success);
+    }
 }
 
 contract Logic1 {
